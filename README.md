@@ -8,6 +8,8 @@ Open [lazygit](https://github.com/jesseduffield/lazygit) in a fullscreen floatin
 - [Open files from lazygit directly in Neovim](#open-files-in-neovim) — no nested editors
 - [vim-tmux-navigator](https://github.com/christoomey/vim-tmux-navigator) pane navigation (`Ctrl+hjkl`) — opt-in via `vim_tmux_navigator = true`
 
+https://github.com/user-attachments/assets/40583690-7058-4a1f-82e7-a501e2fd8c91
+
 ## Installation
 
 Requirements:
