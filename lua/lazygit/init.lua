@@ -2,6 +2,7 @@ local M = {}
 
 local buf = nil
 local win = nil
+local config = {}
 
 local function set_tmux_nav_keymaps(buffer)
 	local nav = {
@@ -71,7 +72,9 @@ local function open()
 	})
 
 	vim.cmd("startinsert")
-	set_tmux_nav_keymaps(buf)
+	if config.tmux_navigation then
+		set_tmux_nav_keymaps(buf)
+	end
 end
 
 function M.toggle()
@@ -89,6 +92,7 @@ end
 
 function M.setup(opts)
 	opts = opts or {}
+	config = opts
 
 	vim.env.NVIM = vim.v.servername
 	vim.env.GIT_EDITOR = "nvim"

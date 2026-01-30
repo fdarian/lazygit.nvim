@@ -17,13 +17,15 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
   keys = {
     { "<leader>lg", "<cmd>LazyGit<cr>" },
   },
-  opts = {},
+  opts = {
+    tmux_navigation = true,
+  },
 }
 ```
 
 ## Features
 
 - Fullscreen floating window
-- Tmux pane navigation (`Ctrl+hjkl`)
+- Tmux pane navigation (`Ctrl+hjkl`) — opt-in via `tmux_navigation = true`
 - Tab-aware layout (adjusts when Neovim tabs are open)
 - Auto-resize on window change
