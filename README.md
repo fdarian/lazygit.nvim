@@ -18,7 +18,9 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
     { "<leader>lg", "<cmd>LazyGit<cr>" },
   },
   opts = {
-    tmux_navigation = true,
+    -- Optional: enable vim-tmux-navigator integration
+    -- https://github.com/christoomey/vim-tmux-navigator
+    vim_tmux_navigator = true,
   },
 }
 ```
@@ -26,6 +28,13 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 ## Features
 
 - Fullscreen floating window
-- Tmux pane navigation (`Ctrl+hjkl`) — opt-in via `tmux_navigation = true`
+- [vim-tmux-navigator](https://github.com/christoomey/vim-tmux-navigator) pane navigation (`Ctrl+hjkl`) — opt-in via `vim_tmux_navigator = true`
 - Tab-aware layout (adjusts when Neovim tabs are open)
 - Auto-resize on window change
+
+## Credits
+
+Inspired by previous lazygit integrations:
+
+- [kdheepak/lazygit.nvim](https://github.com/kdheepak/lazygit.nvim)
+- [folke/snacks.nvim](https://github.com/folke/snacks.nvim)

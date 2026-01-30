@@ -72,7 +72,7 @@ local function open()
 	})
 
 	vim.cmd("startinsert")
-	if config.tmux_navigation then
+	if config.vim_tmux_navigator then
 		set_tmux_nav_keymaps(buf)
 	end
 end
