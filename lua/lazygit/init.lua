@@ -2,6 +2,7 @@ local M = {}
 
 local buf = nil
 local win = nil
+local tab = nil
 local config = {}
 
 local function set_tmux_nav_keymaps(buffer)
@@ -38,6 +39,9 @@ local function update_win_config()
 end
 
 local function open()
+	vim.cmd("tabnew")
+	tab = vim.api.nvim_get_current_tabpage()
+
 	buf = vim.api.nvim_create_buf(false, true)
 
 	win = vim.api.nvim_open_win(buf, true, get_win_config())
@@ -49,24 +53,25 @@ local function open()
 		on_exit = function()
 			local cleanup_buf = buf
 			local cleanup_win = win
+			local cleanup_tab = tab
 			buf = nil
 			win = nil
+			tab = nil
 
 			if cleanup_win ~= nil and vim.api.nvim_win_is_valid(cleanup_win) then
-				local tabpage = vim.api.nvim_win_get_tabpage(cleanup_win)
-				local tabs = vim.api.nvim_list_tabpages()
-				if #tabs > 1 then
-					pcall(vim.api.nvim_set_current_tabpage, tabpage)
-					pcall(vim.cmd, "tabclose")
-				end
+				pcall(vim.api.nvim_win_close, cleanup_win, true)
 			end
 
 			if cleanup_buf ~= nil and vim.api.nvim_buf_is_valid(cleanup_buf) then
 				pcall(vim.api.nvim_buf_delete, cleanup_buf, { force = true })
 			end
 
-			if cleanup_win ~= nil and vim.api.nvim_win_is_valid(cleanup_win) then
-				pcall(vim.api.nvim_win_close, cleanup_win, true)
+			if cleanup_tab ~= nil and vim.api.nvim_tabpage_is_valid(cleanup_tab) then
+				local tabs = vim.api.nvim_list_tabpages()
+				if #tabs > 1 then
+					pcall(vim.api.nvim_set_current_tabpage, cleanup_tab)
+					pcall(vim.cmd, "tabclose")
+				end
 			end
 		end,
 	})
@@ -81,7 +86,18 @@ function M.toggle()
 	if win ~= nil and vim.api.nvim_win_is_valid(win) then
 		if vim.api.nvim_get_current_win() == win then
 			vim.api.nvim_win_close(win, true)
+			if tab ~= nil and vim.api.nvim_tabpage_is_valid(tab) then
+				local tabs = vim.api.nvim_list_tabpages()
+				if #tabs > 1 then
+					pcall(vim.api.nvim_set_current_tabpage, tab)
+					pcall(vim.cmd, "tabclose")
+				end
+			end
+			tab = nil
 		else
+			if tab ~= nil and vim.api.nvim_tabpage_is_valid(tab) then
+				vim.api.nvim_set_current_tabpage(tab)
+			end
 			vim.api.nvim_set_current_win(win)
 			vim.cmd("startinsert")
 		end
