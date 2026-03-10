@@ -3,6 +3,7 @@ local M = {}
 local buf = nil
 local win = nil
 local tab = nil
+local tab_autocmd = nil
 local config = {}
 
 local function set_tmux_nav_keymaps(buffer)
@@ -38,41 +39,64 @@ local function update_win_config()
 	end
 end
 
-local function open()
+local function create_float(target_buf)
+	win = vim.api.nvim_open_win(target_buf, true, get_win_config())
+	vim.api.nvim_set_option_value("winhighlight", "NormalFloat:Normal", { win = win })
+end
+
+local function cleanup()
+	if tab_autocmd ~= nil then
+		pcall(vim.api.nvim_del_autocmd, tab_autocmd)
+		tab_autocmd = nil
+	end
+
+	if win ~= nil and vim.api.nvim_win_is_valid(win) then
+		pcall(vim.api.nvim_win_close, win, true)
+	end
+	win = nil
+
+	if buf ~= nil and vim.api.nvim_buf_is_valid(buf) then
+		pcall(vim.api.nvim_buf_delete, buf, { force = true })
+	end
+	buf = nil
+
+	local cleanup_tab = tab
+	tab = nil
+
+	if cleanup_tab ~= nil and vim.api.nvim_tabpage_is_valid(cleanup_tab) then
+		local tabs = vim.api.nvim_list_tabpages()
+		if #tabs > 1 then
+			pcall(vim.api.nvim_set_current_tabpage, cleanup_tab)
+			pcall(vim.cmd, "tabclose")
+		end
+	end
+end
+
+local function move_to_dedicated_tab()
+	local file_tab = vim.api.nvim_get_current_tabpage()
+
+	if win ~= nil and vim.api.nvim_win_is_valid(win) then
+		pcall(vim.api.nvim_win_close, win, true)
+		win = nil
+	end
+
 	vim.cmd("tabnew")
 	tab = vim.api.nvim_get_current_tabpage()
 
+	create_float(buf)
+
+	vim.api.nvim_set_current_tabpage(file_tab)
+end
+
+local function open()
 	buf = vim.api.nvim_create_buf(false, true)
 
-	win = vim.api.nvim_open_win(buf, true, get_win_config())
-
-	vim.api.nvim_set_option_value("winhighlight", "NormalFloat:Normal", { win = win })
+	create_float(buf)
 
 	vim.fn.termopen("lazygit", {
 		cwd = vim.fn.getcwd(),
 		on_exit = function()
-			local cleanup_buf = buf
-			local cleanup_win = win
-			local cleanup_tab = tab
-			buf = nil
-			win = nil
-			tab = nil
-
-			if cleanup_win ~= nil and vim.api.nvim_win_is_valid(cleanup_win) then
-				pcall(vim.api.nvim_win_close, cleanup_win, true)
-			end
-
-			if cleanup_buf ~= nil and vim.api.nvim_buf_is_valid(cleanup_buf) then
-				pcall(vim.api.nvim_buf_delete, cleanup_buf, { force = true })
-			end
-
-			if cleanup_tab ~= nil and vim.api.nvim_tabpage_is_valid(cleanup_tab) then
-				local tabs = vim.api.nvim_list_tabpages()
-				if #tabs > 1 then
-					pcall(vim.api.nvim_set_current_tabpage, cleanup_tab)
-					pcall(vim.cmd, "tabclose")
-				end
-			end
+			cleanup()
 		end,
 	})
 
@@ -80,20 +104,42 @@ local function open()
 	if config.vim_tmux_navigator then
 		set_tmux_nav_keymaps(buf)
 	end
+
+	tab_autocmd = vim.api.nvim_create_autocmd("TabNewEntered", {
+		group = "lazygit",
+		callback = function()
+			if tab ~= nil or win == nil then
+				return
+			end
+
+			if tab_autocmd ~= nil then
+				pcall(vim.api.nvim_del_autocmd, tab_autocmd)
+				tab_autocmd = nil
+			end
+
+			move_to_dedicated_tab()
+		end,
+	})
 end
 
 function M.toggle()
 	if win ~= nil and vim.api.nvim_win_is_valid(win) then
 		if vim.api.nvim_get_current_win() == win then
 			vim.api.nvim_win_close(win, true)
+			win = nil
+			-- If on a dedicated tab, switch away (keep tab alive for re-show)
 			if tab ~= nil and vim.api.nvim_tabpage_is_valid(tab) then
 				local tabs = vim.api.nvim_list_tabpages()
-				if #tabs > 1 then
-					pcall(vim.api.nvim_set_current_tabpage, tab)
-					pcall(vim.cmd, "tabclose")
+				for i, t in ipairs(tabs) do
+					if t == tab then
+						local target_idx = i > 1 and i - 1 or i + 1
+						if target_idx <= #tabs then
+							vim.api.nvim_set_current_tabpage(tabs[target_idx])
+						end
+						break
+					end
 				end
 			end
-			tab = nil
 		else
 			if tab ~= nil and vim.api.nvim_tabpage_is_valid(tab) then
 				vim.api.nvim_set_current_tabpage(tab)
@@ -101,6 +147,12 @@ function M.toggle()
 			vim.api.nvim_set_current_win(win)
 			vim.cmd("startinsert")
 		end
+	elseif buf ~= nil and vim.api.nvim_buf_is_valid(buf) then
+		if tab ~= nil and vim.api.nvim_tabpage_is_valid(tab) then
+			vim.api.nvim_set_current_tabpage(tab)
+		end
+		create_float(buf)
+		vim.cmd("startinsert")
 	else
 		open()
 	end
